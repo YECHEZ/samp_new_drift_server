@@ -168,7 +168,8 @@ new AdmHlp[][] = {
 {"	{0066FF}двойной клик по игроку после нажатия кнопки ''TAB''\n"},
 {"		{FFFFCC}Админ 1 lvl: {66FF00}/ahelp - помощь по командам, /a - админ-чат,\n"},
 {"{66FF00}/time - время на сервере, /weat - погода на сервере, /mess - сообщение\n"},
-{"{66FF00}от админа, /cord - узнать свои координаты\n"},
+{"{66FF00}от админа, /cord - узнать свои координаты, /ocam - админ-меню оперативных\n"},
+{"{66FF00}команд\n"},
 {"		{FFFFCC}Админ 2 lvl: {66FF00}/muteakk - заткнуть офф-лайн игрока, /prisonakk -\n"},
 {"{66FF00}посадить в тюрьму офф-лайн игрока, /sid - просмотреть список ID игроков,\n"},
 {"{66FF00}/cc - очистить чат ВСЕМ игрокам, /mark - задать точку телепорта, /gotomark -\n"},
@@ -19088,7 +19089,7 @@ public OnPlayerConnect(playerid)
 		SendClientMessageToAll(COLOR_RED, string);
 		strdel(fbanreason[playerid], 0, 256);//очистка причины бана
 		strcat(fbanreason[playerid], "* Чит реконнектов.");
-		SetTimerEx("PlayBan", 300, 0, "i", playerid);
+		PlayBan(playerid);
 		return 1;
 	}
 	locper2[playerid] = 0;
@@ -19109,7 +19110,7 @@ public OnPlayerConnect(playerid)
 		SendClientMessageToAll(COLOR_RED, string);
 		strdel(fbanreason[playerid], 0, 256);//очистка причины бана
 		strcat(fbanreason[playerid], "* Чит подключения ботов.");
-		SetTimerEx("PlayBan", 300, 0, "i", playerid);
+		PlayBan(playerid);
 		return 1;
 	}
 
@@ -20717,7 +20718,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 			SendClientMessage(playerid, COLOR_LIGHTBLUE, " ---------------------- Помощь по админским командам ----------------------");
 			if(PlayerInfo[playerid][pAdmin] >= 1)
 			{
-				SendClientMessage(playerid, COLOR_GRAD1, " 1 левел: /ahelp, /a, /time, /weat, /mess, /cord");
+				SendClientMessage(playerid, COLOR_GRAD1, " 1 левел: /ahelp, /a, /time, /weat, /mess, /cord, /ocam");
 			}
 			if(PlayerInfo[playerid][pAdmin] >= 2)
 			{
@@ -21748,6 +21749,49 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		}
 		return 1;
 	}
+	if(strcmp(cmd, "/ocam", true) == 0)
+	{
+		if(PlayerInfo[playerid][pAdmin] >= 1)
+		{
+			tmp = strtok(cmdtext, idx);
+			if(!strlen(tmp))
+			{
+				SendClientMessage(playerid, COLOR_GRAD2, " Используйте: /ocam [ид игрока]");
+				return 1;
+			}
+			new para1;
+			para1 = strval(tmp);
+ 			if(IsPlayerConnected(para1))
+ 			{
+			    player[playerid] = para1;
+				format(playtarget[playerid], MAX_PLAYER_NAME, "%s", RealName[player[playerid]]);
+			    if(PlayerInfo[playerid][pAdmin] >= 1 && PlayerInfo[playerid][pAdmin] <= 12 && PlayerInfo[player[playerid]][pAdmin] >= 13)
+				{
+					ShowPlayerDialog(playerid, 2, 0, "Информация.", "Выбранный игрок защищён !", "OK", "");
+					dlgcont[playerid] = 2;
+					return 1;
+				}
+				new stringdd[128];
+				new strdlndd[1024];
+				format(strdlndd, sizeof(strdlndd), "Тп к нему (1)\nТп его к себе (1)\nНаблюдать (1)\nСнять наблюдение (1)\
+				\nПополнить жизнь и броню (3)\nБан (6)\nКик (5)\nЗаблокировать (2)\nРазблокировать (2)\nЗаморозить (2)\
+				\nРазморозить (2)\nУбить (3)\nЗаткнуть (2)\nПосадить в тюрьму (2)\nТп себя в тюрьму (1)\
+				\nТп себя в полицейский участок (1)\nПросмотреть статистику (1)\nСменить скин (3)\nУзнать IP (1)\nСлапнуть (1)");
+				format(stringdd, sizeof(stringdd), "Админ-меню. ( %s [%d] )", playtarget[playerid], player[playerid]);
+				ShowPlayerDialog(playerid, 5, DIALOG_STYLE_LIST, stringdd, strdlndd, "Выбор", "Отмена");
+				dlgcont[playerid] = 5;
+			}
+			else
+			{
+				SendClientMessage(playerid, COLOR_RED, " Такого [ид игрока] на сервере нет !");
+			}
+		}
+		else
+		{
+			SendClientMessage(playerid, COLOR_RED, " У Вас нет прав на использование этой команды !");
+		}
+		return 1;
+ 	}
 //--------------------- команды админов 1 лвл (конец) --------------------------
 //--------------------- команды админов 2 лвл (начало) -------------------------
 	if(strcmp(cmd, "/muteakk", true) == 0)
