@@ -1,0 +1,14 @@
+*.amx
+*.exe
+*.ban
+/server-readme.txt
+/samp-license.txt
+/Дополнительно
+/npcmodes
+/include
+pawno/*.exe
+pawno/*.ini
+pawno/*.dll
+pawno/*.ico
+pawno/*.pwn
+pawno/*.dll
