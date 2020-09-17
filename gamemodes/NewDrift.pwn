@@ -39908,6 +39908,7 @@ public MinServ()//таймер минут на сервере
 	if(oldhour != timedata[0])
 	{
 		oldhour = timedata[0];
+		SetWeather(1);
 		SetWorldTime(timedata[0]);
 	}
 	return 1;
