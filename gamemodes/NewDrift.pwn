@@ -223,6 +223,7 @@ new PlayerText:dmdeathTD[MAX_PLAYERS];
 new Text3D:dmkd3D[MAX_PLAYERS];//3D-тексты DM-зон
 new Float:dmcor[MAX_PLAYERS][4];//координаты сохранений в DM-зонах
 new countdown22[MAX_PLAYERS];//обратный DM-отсчёт
+new dmwplay[MAX_PLAYERS];//маркер присутствия в DM-мирах
 new dopadm[MAX_PLAYERS];//дополнительные переменные админок
 new NRadio[MAX_PLAYERS];//переменная номера подключенного радио//Радио
 new STRadio[OBRAD][128];//массив URL-ссылок на радио-потоки
@@ -19127,6 +19128,7 @@ public OnPlayerConnect(playerid)
 	PlayerTextDrawHide(playerid, dmkillTD[playerid]);//отключаем игроку текстдравы DM-зон
 	PlayerTextDrawHide(playerid, dmdeathTD[playerid]);
 	countdown22[playerid] = -1;//очистка обратного DM-отсчёта
+	dmwplay[playerid] = 0;//обнуляем маркер присутствия в DM-мирах
 	chatcon[playerid] = 0;//обнуляем контрольную переменную чата
 	SetPVarInt(playerid, "CComAc0", 0);
 	SetPVarInt(playerid, "CComAc1", 0);
@@ -19410,6 +19412,7 @@ public OnPlayerDisconnect(playerid, reason)
 	dmplay22[playerid] = 0;//обнуляем вспомогательный маркер DM-зон
 	dmspa[playerid] = 0;//обнуляем блокировку сохранения координат и угла игрока в DM-зонах
 	countdown22[playerid] = -1;//очистка обратного DM-отсчёта
+	dmwplay[playerid] = 0;//обнуляем маркер присутствия в DM-мирах
 	functioncon[playerid] = 0;//обнуляем контрольную переменную функций
 	chatcon[playerid] = 0;//обнуляем контрольную переменную чата
 	strdel(fbanreason[playerid], 0, 256);//очистка причины бана
@@ -20095,41 +20098,52 @@ public OnPlayerSpawn(playerid)
 				SetCameraBehindPlayer(playerid);//расположить камеру за игроком
 				SetTimerEx("dmrespawn", 2000, 0, "i", playerid);//задержка разрешения сохранения координат и угла игрока в DM-зоне
 			}
-			else//иначе - спавн игрока:
+			else//иначе:
 			{
 				new locper = random(18);
-				if(PGang[playerid] > 0 && strlen(GName[PGang[playerid]]) == 0)//Gangs system
-				{//если игрок состоит в банде, и в названии банды нет ни одного символа (банда удалена), то:
-					PGang[playerid] = 0;//обнулить игроку статус банды, и заспавнить игрока как обычного
-	    			GangLvl[playerid] = 0;
-					SendClientMessage(playerid, 0xFF0000FF, "Ваша банда была удалена !");
+				if(dmwplay[playerid] != 0)//если игрок был в DM-мире, то:
+				{
 	 				SetPlayerInterior(playerid, 0);//установка интерьера 0
-					SetPlayerVirtualWorld(playerid, 0);//установка виртуального мира 0
+					SetPlayerVirtualWorld(playerid, dmwplay[playerid]+18000);//установка виртуального мира
 					SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);//случайные координаты спавна игрока
 					SetPlayerFacingAngle(playerid, playspaa[locper]);//случайный угол спавна игрока
-	 				SetCameraBehindPlayer(playerid);//расположить камеру за игроком
+ 					SetCameraBehindPlayer(playerid);//расположить камеру за игроком
 				}
-				else//иначе - проверить на наличие спавна из банды
+				else//иначе - спавн игрока:
 				{
-					if(PGang[playerid] > 0 && (GSpawnX[PGang[playerid]] != 0.0 ||
-					GSpawnY[PGang[playerid]] != 0.0 || GSpawnZ[PGang[playerid]] != 0.0))
-					{//если игрок состоит в банде, и в банде установлены координаты спавна, то:
-	 					SetPlayerInterior(playerid, GInter[PGang[playerid]]);//установка интерьера из банды
-						SetPlayerVirtualWorld(playerid, GWorld[PGang[playerid]]);//установка виртуального мира из банды
-						SetPlayerPos(playerid, GSpawnX[PGang[playerid]], GSpawnY[PGang[playerid]], GSpawnZ[PGang[playerid]]);//координаты спавна игрока из банды
-	 					SetCameraBehindPlayer(playerid);//расположить камеру за игроком
-					}
-					else//иначе - случайный спавн
-					{
-	 					SetPlayerInterior(playerid, 0);//установка интерьера 0
+					if(PGang[playerid] > 0 && strlen(GName[PGang[playerid]]) == 0)//Gangs system
+					{//если игрок состоит в банде, и в названии банды нет ни одного символа (банда удалена), то:
+						PGang[playerid] = 0;//обнулить игроку статус банды, и заспавнить игрока как обычного
+		    			GangLvl[playerid] = 0;
+						SendClientMessage(playerid, 0xFF0000FF, "Ваша банда была удалена !");
+		 				SetPlayerInterior(playerid, 0);//установка интерьера 0
 						SetPlayerVirtualWorld(playerid, 0);//установка виртуального мира 0
 						SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);//случайные координаты спавна игрока
 						SetPlayerFacingAngle(playerid, playspaa[locper]);//случайный угол спавна игрока
-	 					SetCameraBehindPlayer(playerid);//расположить камеру за игроком
+		 				SetCameraBehindPlayer(playerid);//расположить камеру за игроком
 					}
-					if(playspa[playerid] == 0)//если это первый спавн игрока, то:
+					else//иначе - проверить на наличие спавна из банды
 					{
-						SetTimerEx("Logg333", 1000, 0, "i", playerid);//задержка, на время чтения аккаунта банды
+						if(PGang[playerid] > 0 && (GSpawnX[PGang[playerid]] != 0.0 ||
+						GSpawnY[PGang[playerid]] != 0.0 || GSpawnZ[PGang[playerid]] != 0.0))
+						{//если игрок состоит в банде, и в банде установлены координаты спавна, то:
+		 					SetPlayerInterior(playerid, GInter[PGang[playerid]]);//установка интерьера из банды
+							SetPlayerVirtualWorld(playerid, GWorld[PGang[playerid]]);//установка виртуального мира из банды
+							SetPlayerPos(playerid, GSpawnX[PGang[playerid]], GSpawnY[PGang[playerid]], GSpawnZ[PGang[playerid]]);//координаты спавна игрока из банды
+		 					SetCameraBehindPlayer(playerid);//расположить камеру за игроком
+						}
+						else//иначе - случайный спавн
+						{
+		 					SetPlayerInterior(playerid, 0);//установка интерьера 0
+							SetPlayerVirtualWorld(playerid, 0);//установка виртуального мира 0
+							SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);//случайные координаты спавна игрока
+							SetPlayerFacingAngle(playerid, playspaa[locper]);//случайный угол спавна игрока
+		 					SetCameraBehindPlayer(playerid);//расположить камеру за игроком
+						}
+						if(playspa[playerid] == 0)//если это первый спавн игрока, то:
+						{
+							SetTimerEx("Logg333", 1000, 0, "i", playerid);//задержка, на время чтения аккаунта банды
+						}
 					}
 				}
 			}
@@ -27740,7 +27754,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 4)
 			{
 				ShowPlayerDialog(playerid, 13, DIALOG_STYLE_LIST, "ДеадМатчи", "DM зона 1\nDM зона 2\nDM зона 3\nDM зона 4\
-				\nDM зона 5\nDM зона 6\nDM зона 7\nDM зона 8\nDM зона 9\nDM зона 10", "OK", "Отмена");
+				\nDM зона 5\nDM зона 6\nDM зона 7\nDM зона 8\nDM зона 9\nDM зона 10\nDM мир 1\nDM мир 2\nDM мир 3\nDM мир 4\
+				\nDM мир 5\nВыйти из DM мира", "OK", "Отмена");
 				dlgcont[playerid] = 13;
 				return 1;
 			}
@@ -32055,7 +32070,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 0)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -330.839355, Float:cor2 = 1522.886596,
@@ -32073,7 +32088,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 1)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 2492.007568, Float:cor2 = -1666.290527,
@@ -32091,7 +32106,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 2)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -2201.898437, Float:cor2 = -992.045593,
@@ -32109,7 +32124,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 3)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 1579.506713, Float:cor2 = -2378.161132,
@@ -32127,7 +32142,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 4)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 1241.1146, Float:cor2 = -745.0139,
@@ -32145,7 +32160,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 5)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -878.056945, Float:cor2 = 566.045166,
@@ -32163,7 +32178,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 6)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -123.211082, Float:cor2 = 578.542785,
@@ -32181,7 +32196,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 7)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 1693.854858, Float:cor2 = 945.497314,
@@ -32199,7 +32214,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 8)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -1195.292114, Float:cor2 = 16.669136,
@@ -32217,7 +32232,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 9)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -1661.367919, Float:cor2 = -233.015777,
@@ -32235,7 +32250,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 10)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 2611.990722, Float:cor2 = -2240.047607,
@@ -32253,7 +32268,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 11)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -430.167083, Float:cor2 = 2504.743164,
@@ -32271,7 +32286,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 12)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 406.1716, Float:cor2 = 2442.7126,
@@ -32289,7 +32304,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 13)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -2322.2446, Float:cor2 = -1621.0658,
@@ -32307,7 +32322,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 14)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -777.401062, Float:cor2 = 1931.802001,
@@ -32325,7 +32340,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 15)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 331.761199, Float:cor2 = -1846.912353,
@@ -32343,7 +32358,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 16)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 370.03, Float:cor2 = -2026.16, Float:cor3 = 7.67+1;
@@ -32360,7 +32375,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 17)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 5853.88, Float:cor2 = 894.52, Float:cor3 = 11.00+1;
@@ -32377,7 +32392,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 18)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 1520.302368, Float:cor2 = 1190.935913,
@@ -32395,7 +32410,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 19)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -1665.142822, Float:cor2 = 289.960113,
@@ -32413,7 +32428,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 20)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 5813.85, Float:cor2 = 2907.17, Float:cor3 = 11.03+1;
@@ -32430,7 +32445,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 21)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 6276.00, Float:cor2 = -3292.84, Float:cor3 = 11.63+1;
@@ -32447,7 +32462,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 22)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -2589.0078, Float:cor2 = 1351.3533,
@@ -32465,7 +32480,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 23)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 45.00, Float:cor2 = 5867.00, Float:cor3 = 11.00+1;
@@ -32482,7 +32497,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 24)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 12045.00, Float:cor2 = 5867.00, Float:cor3 = 11.00+1;
@@ -32499,7 +32514,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 25)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 2098.373779, Float:cor2 = 1968.814941,
@@ -32517,7 +32532,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 26)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -2955.00, Float:cor2 = 5867.00, Float:cor3 = 11.00+1;
@@ -32534,7 +32549,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 27)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 1567.494750, Float:cor2 = 712.591613,
@@ -32552,7 +32567,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 28)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 2326.265869, Float:cor2 = 1405.049682,
@@ -32570,7 +32585,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 29)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -1980.0601, Float:cor2 = 253.1375, Float:cor3 = 35.1719+1;
@@ -32587,7 +32602,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 30)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -402.3530, Float:cor2 = 1226.7317, Float:cor3 = 5.1702+1;
@@ -32604,7 +32619,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 31)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -1476.639160, Float:cor2 = 433.979278,
@@ -32622,7 +32637,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 32)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 2818.26, Float:cor2 = -5739.77, Float:cor3 = 11.99+1;
@@ -32639,7 +32654,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 33)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 496.13, Float:cor2 = 6077.00, Float:cor3 = 10.92+1;
@@ -32656,7 +32671,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 34)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 1911.349731, Float:cor2 = -2276.981445,
@@ -32674,7 +32689,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 35)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 =  9045.00, Float:cor2 = 5867.00, Float:cor3 = 11.00+1;
@@ -32691,7 +32706,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 36)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -2961.64, Float:cor2 = -5889.14, Float:cor3 = 590.60+1;
@@ -32708,7 +32723,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 37)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -2023.99, Float:cor2 = -134.94, Float:cor3 = 35.29+1;
@@ -32725,7 +32740,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 38)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -6687.05, Float:cor2 = -3019.09, Float:cor3 = 7.36+1;
@@ -32742,7 +32757,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 39)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -6027.63, Float:cor2 = 2858.69, Float:cor3 = 48.70+1;
@@ -32759,7 +32774,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 40)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 3442.73, Float:cor2 = 3438.16, Float:cor3 = 7.04+1;
@@ -32776,7 +32791,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 41)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 1131.86, Float:cor2 = 2337.27, Float:cor3 = 16.71+1;
@@ -32793,7 +32808,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 42)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 2411.72, Float:cor2 = -4119.59, Float:cor3 = 13.69+1;
@@ -32810,7 +32825,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 43)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 9121.15, Float:cor2 = 2941.34, Float:cor3 = 13.69+1;
@@ -32827,7 +32842,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 44)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -9273.04, Float:cor2 = -6014.93, Float:cor3 = 11.48+1;
@@ -32844,7 +32859,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 45)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -5937.48, Float:cor2 = -6142.41, Float:cor3 = 10.36+1;
@@ -32861,7 +32876,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 46)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -9051.16, Float:cor2 = -8925.66, Float:cor3 = 5.34+1;
@@ -32878,7 +32893,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 47)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -6211.97, Float:cor2 = -8966.21, Float:cor3 = 18.80+1;
@@ -32895,7 +32910,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 48)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -3032.29, Float:cor2 = -8935.98, Float:cor3 = 16.30+1;
@@ -32912,7 +32927,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 49)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -229.41, Float:cor2 = -8371.25, Float:cor3 = 11.59+1;
@@ -32929,7 +32944,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 50)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = 3108.82, Float:cor2 = -8963.74, Float:cor3 = 33.98+1;
@@ -32946,7 +32961,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 51)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -8722.82, Float:cor2 = 6152.05, Float:cor3 = 27.17+1;
@@ -32963,7 +32978,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 52)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -8708.47, Float:cor2 = 3363.80, Float:cor3 = 25.48+1;
@@ -32980,7 +32995,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 53)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -8905.41, Float:cor2 = -190.98, Float:cor3 = 163.72+1;
@@ -32997,7 +33012,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 54)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2 = vw, Float:per3, Float:cor1 = -8955.26, Float:cor2 = -3241.27, Float:cor3 = 13.72+1;
@@ -33014,7 +33029,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(listitem == 55)
 			{
 				new vw = GetPlayerVirtualWorld(playerid);
-				if(vw < 0 || vw > 990) { vw = 0; }
+				if(vw < 0 || (vw > 990 && vw < 18001) || vw > 18999) { vw = 0; }
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2, Float:per3, Float:cor1 = 5925.69, Float:cor2 = -1470.15, Float:cor3 = 8.97+1;
@@ -33047,6 +33062,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		dlgcont[playerid] = -600;//не существующий ИД диалога
 	    if(response)
 		{
+			new locper = random(18);
 			ResetPlayerWeapons(playerid);//отобрать оружие
 			GivePlayerWeapon(playerid, 24, 500);//заполнение слотов оружия игрока перед DM
 			GivePlayerWeapon(playerid, 26, 500);
@@ -33129,6 +33145,66 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	 			SetPlayerInterior(playerid, 0);
 				SetPlayerVirtualWorld(playerid, 17010);
 			 	SetPlayerPos(playerid, 20.35, 1483.39, 12.75);//DM зона 10
+				return 1;
+			}
+			if(listitem == 10)
+			{
+				DestrCar(playerid);
+	 			SetPlayerInterior(playerid, 0);
+				SetPlayerVirtualWorld(playerid, 18001);
+				SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);
+				SetPlayerFacingAngle(playerid, playspaa[locper]);
+				SetCameraBehindPlayer(playerid);//DM мир 1
+				return 1;
+			}
+			if(listitem == 11)
+			{
+				DestrCar(playerid);
+	 			SetPlayerInterior(playerid, 0);
+				SetPlayerVirtualWorld(playerid, 18002);
+				SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);
+				SetPlayerFacingAngle(playerid, playspaa[locper]);
+				SetCameraBehindPlayer(playerid);//DM мир 2
+				return 1;
+			}
+			if(listitem == 12)
+			{
+				DestrCar(playerid);
+	 			SetPlayerInterior(playerid, 0);
+				SetPlayerVirtualWorld(playerid, 18003);
+				SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);
+				SetPlayerFacingAngle(playerid, playspaa[locper]);
+				SetCameraBehindPlayer(playerid);//DM мир 3
+				return 1;
+			}
+			if(listitem == 13)
+			{
+				DestrCar(playerid);
+	 			SetPlayerInterior(playerid, 0);
+				SetPlayerVirtualWorld(playerid, 18004);
+				SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);
+				SetPlayerFacingAngle(playerid, playspaa[locper]);
+				SetCameraBehindPlayer(playerid);//DM мир 4
+				return 1;
+			}
+			if(listitem == 14)
+			{
+				DestrCar(playerid);
+	 			SetPlayerInterior(playerid, 0);
+				SetPlayerVirtualWorld(playerid, 18005);
+				SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);
+				SetPlayerFacingAngle(playerid, playspaa[locper]);
+				SetCameraBehindPlayer(playerid);//DM мир 5
+				return 1;
+			}
+			if(listitem == 15)
+			{
+				DestrCar(playerid);
+	 			SetPlayerInterior(playerid, 0);
+				SetPlayerVirtualWorld(playerid, 0);
+				SetPlayerPos(playerid, playspax[locper], playspay[locper], playspaz[locper]);
+				SetPlayerFacingAngle(playerid, playspaa[locper]);
+				SetCameraBehindPlayer(playerid);//Выйти из DM мира
 			}
 		}else{
 			gettime(timedata[0], timedata[1]);
@@ -38350,9 +38426,39 @@ public ShowStats(playerid, targetid)
 		PlayerInfo[targetid][pMinlog], GetPlayerMoney(targetid), GetPlayerScore(targetid) ,PlayerInfo[targetid][pKills],
 		PlayerInfo[targetid][pDeaths], PlayerInfo[targetid][pAdmin], PlayerInfo[targetid][pAdmshad]);
 		SendClientMessage(playerid, COLOR_GRAD1, coordsstring);
-		format(coordsstring, sizeof(coordsstring), " Бессмертие [%d] Число затыков: [%d] Секунд затыка: [%d] Посадок в тюрьму: [%d] Секунд тюрьмы: [%d] Виртуальный мир: [%d]",
-		PlayerInfo[targetid][pAdmlive], PlayerInfo[targetid][pMuted], PlayerInfo[targetid][pMutedsec], PlayerInfo[targetid][pPrison],
-		PlayerInfo[targetid][pPrisonsec], GetPlayerVirtualWorld(targetid));
+		new plvw, data22;
+		plvw = GetPlayerVirtualWorld(targetid);
+		data22 = 0;
+		if(plvw == 0) { data22 = 1; }
+		if(plvw >= 1 && plvw <= 990) { data22 = 2; }
+		if(plvw >= 1000 && plvw <= 1999) { data22 = 3; }
+		if(plvw >= 2000 && plvw <= 2999) { data22 = 4; }
+		if(plvw >= 3000 && plvw <= 3999) { data22 = 5; }
+		if(plvw >= 4000 && plvw <= 4999) { data22 = 6; }
+		if(plvw >= 5000 && plvw <= 5999) { data22 = 7; }
+		if(plvw >= 6000 && plvw <= 6999) { data22 = 8; }
+		if(plvw >= 7000 && plvw <= 7999) { data22 = 9; }
+		if(plvw >= 8000 && plvw <= 8002) { data22 = 10; }
+		if(plvw == 9990) { data22 = 11; }
+		if(plvw >= 17001 && plvw <= 17010) { data22 = 12; }
+		if(plvw >= 18001 && plvw <= 18005) { data22 = 13; }
+		switch(data22)
+		{
+			case 0: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - ошибка !!!",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 1: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - основной.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 2: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - ДТ.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 3: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - дома.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 4: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - МП.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 5: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - гаражи.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 6: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - гонки.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 7: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - вирт. спавн.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 8: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - динамич. базы.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 9: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - гонки-2.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 10: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - банки.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 11: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - дерби-сумо.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 12: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - ДМ зоны.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 13: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - ДМ миры.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+		}
 		SendClientMessage(playerid, COLOR_GRAD1, coordsstring);
 		if(PlayerInfo[targetid][pAdmin] >= 7)
 		{
@@ -39406,6 +39512,14 @@ public PolSec()//вспомогательный таймер 450 мс
 					dmplay[i] = 0;//обнуляем маркер присутствия в DM-зоне
 					dmplay22[i] = 0;//обнуляем вспомогательный маркер DM-зон
 				}
+			}
+			if(plvw >= 18001 && plvw <= 18010)//если игрок в DM-мире, то:
+			{
+				dmwplay[i] = plvw - 18000;//устанавливаем маркер присутствия в DM-мире
+			}
+			else
+			{
+				dmwplay[i] = 0;//обнуляем маркер присутствия в DM-мире
 			}
 		}
 	}
