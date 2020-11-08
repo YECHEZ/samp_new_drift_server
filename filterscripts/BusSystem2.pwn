@@ -68,6 +68,7 @@ forward TimCor();//коррекция времени
 forward ReadCorTime();//чтение файла cortime.ini
 forward dopfunction(per);//функция дальнего вызова для чтения коррекции времени
 forward OneMin();//1-минутный таймер
+forward OneSec();//1-секундный таймер
 
 new Text3D:fantxt;//переменная для хранения 3D-текста с несущесвующим ИД
 new dlgcont[MAX_PLAYERS];//контроль ИД диалога
@@ -95,6 +96,8 @@ new PickupID[BUS_MAX];//массив ИД пикапов
 new MapIconID[BUS_MAX];//массив ИД мап-иконок
 new Text3D:Nbus[BUS_MAX];//массив ИД 3D-текстов
 new timeronemin;//переменная 1-минутного таймера
+new timeronesec;//переменная 1-секундного таймера
+new busdlgcon[MAX_PLAYERS];//переменная контроля диалогов
 
 public OnFilterScriptInit()
 {
@@ -105,12 +108,14 @@ public OnFilterScriptInit()
 	}
 	LoadBusSystem();//загрузка системы бизнесов
 	timeronemin = SetTimer("OneMin", 59981, 1);//запуск 1-минутного таймера
+	timeronesec = SetTimer("OneSec", 993, 1);//запуск 1-секундного таймера
 	return 1;
 }
 
 public OnFilterScriptExit()
 {
 	Delete3DTextLabel(fantxt);//удаляем 3D-текст с несущесвующим ИД
+	KillTimer(timeronesec);//остановка 1-секундного таймера
 	KillTimer(timeronemin);//остановка 1-минутного таймера
 	UnloadBusSystem();//выгрузка системы бизнесов
 	return 1;
@@ -118,6 +123,7 @@ public OnFilterScriptExit()
 
 public OnPlayerConnect(playerid)
 {
+	busdlgcon[playerid] = 0;//обнуляем контроль диалогов
 	dlgcont[playerid] = -600;//не существующий ИД диалога
 	playspabs[playerid] = 0;//игрок не заспавнился
 	playIDbus[playerid] = -600;//не существующий ИД бизнеса для игрока
@@ -144,6 +150,7 @@ public OnPlayerDisconnect(playerid, reason)
 	}
 	playIDbus[playerid] = -600;//не существующий ИД бизнеса для игрока
 	dlgcont[playerid] = -600;//не существующий ИД диалога
+	busdlgcon[playerid] = 0;//обнуляем контроль диалогов
 	return 1;
 }
 
@@ -660,6 +667,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			return 1;
 		}
 		dlgcont[playerid] = -600;//не существующий ИД диалога
+		busdlgcon[playerid]++;//контроль диалогов +1
 		playIDbus[playerid] = -600;//не существующий ИД бизнеса для игрока
 		return 1;
 	}
@@ -671,6 +679,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			return 1;
 		}
 		dlgcont[playerid] = -600;//не существующий ИД диалога
+		busdlgcon[playerid]++;//контроль диалогов +1
         if(response)
 		{
 			new string[256];
@@ -778,6 +787,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			return 1;
 		}
 		dlgcont[playerid] = -600;//не существующий ИД диалога
+		busdlgcon[playerid]++;//контроль диалогов +1
         if(response)
 		{
 			new string[256];
@@ -992,6 +1002,33 @@ public OneMin()//1-минутный таймер
 			}
 		}
 	}
+	return 1;
+}
+
+public OneSec()//1-секундный таймер
+{
+	new string[256];
+	for(new i; i < MAX_PLAYERS; i++)
+	{
+		if(IsPlayerConnected(i))
+		{
+			if(busdlgcon[i] > 1)//если контроль диалогов больше 1, то:
+			{
+				format(string, sizeof(string), "[BusSystem] Игрок %s [%d] был кикнут за чит, мешающий работе сервера !", RealName[i], i);
+				print(string);
+				SendClientMessageToAll(0xFF0000FF, string);
+				SetTimerEx("PlayKick", 300, 0, "i", i);
+			}
+			busdlgcon[i] = 0;//обнуляем контроль диалогов
+		}
+	}
+	return 1;
+}
+
+forward PlayKick(playerid);
+public PlayKick(playerid)
+{
+	Kick(playerid);
 	return 1;
 }
 
