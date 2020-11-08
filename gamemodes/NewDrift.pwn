@@ -490,31 +490,31 @@ public OnGameModeInit()
 	print("       GangSystem успешно загружена !        ");
 	print("--------------------------------------------\n");
 
-	STRadio[1] = "http://www.zaycev.fm:9001/ZaycevFM(128).m3u";//URL ссылки //Радио
+	STRadio[1] = "http://air.radiorecord.ru:805/gold_128";//URL ссылки //Радио
 	STRadio[2] = "http://ep128server.streamr.ru:8030/ep128";
 	STRadio[3] = "http://air.radiorecord.ru:8102/sd90_128";
-	STRadio[4] = "http://online.nashipesni.ru:8000/nashipesni";
-	STRadio[5] = "http://stream05.akaver.com/russkoeradio_hi.mp3";
+	STRadio[4] = "http://air.radiorecord.ru:805/mix_128";
+	STRadio[5] = "http://air.radiorecord.ru:805/rock_128";
 	STRadio[6] = "http://cast.radiogroup.com.ua:8000/avtoradio";
 	STRadio[7] = "http://air.radiorecord.ru:8101/rr_128";
 	STRadio[8] = "http://air.radiorecord.ru:8102/dub_128";
 	STRadio[9] = "http://air.radiorecord.ru:8102/club_128";
 	STRadio[10] = "http://air.radiorecord.ru:8102/mdl_128";
 	STRadio[11] = "http://air.radiorecord.ru:8102/gop_128";
-	STRadio[12] = "http://streaming.radionomy.com/radio-xtreme---sensation-tubes-garantie";
+	STRadio[12] = "http://air.radiorecord.ru:805/techno_128";
 
-	NMRadio[1] = "Zaycev-FM";//названия радиостанций //Радио
+	NMRadio[1] = "Gold";//названия радиостанций //Радио
 	NMRadio[2] = "Европа +";
 	NMRadio[3] = "Супердискотека 90-х";
-	NMRadio[4] = "Наши песни";
-	NMRadio[5] = "Русское радио";
+	NMRadio[4] = "Мегамикс";
+	NMRadio[5] = "Рок радио";
 	NMRadio[6] = "Авторадио";
 	NMRadio[7] = "Radio Record";
 	NMRadio[8] = "Dubstep";
 	NMRadio[9] = "Club";
 	NMRadio[10] = "Медляк FM";
 	NMRadio[11] = "Гоп FM";
-	NMRadio[12] = "Radio Xtreme";
+	NMRadio[12] = "Техно";
 
 	SetTimer("ReloadFS", 1000, 0);//перезагрузка фильтрскриптов
 
