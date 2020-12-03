@@ -21200,9 +21200,11 @@ public OnPlayerCommandText(playerid, cmdtext[])
 			SendClientMessage(playerid, COLOR_RED, " В режиме наблюдения эта команда не работает !");
 			return 1;
 		}
-		if(GetPlayerInterior(playerid) != 0)//если игрок в доме или другом интерьере, то:
+		new plvw;
+		plvw = GetPlayerVirtualWorld(playerid);
+		if(plvw < 0 || plvw > 990)
 		{
-			SendClientMessage(playerid, COLOR_RED, " В домах и других интерьерах эта команда не работает !");
+			SendClientMessage(playerid, COLOR_RED, " Команда работает только на основной карте, или в ДТ мирах !");
 			return 1;
 		}
 		tmp = strtok(cmdtext, idx);
@@ -21219,7 +21221,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		}
 		if(ii > 0)
 		{
-			if(ii == GetPlayerVirtualWorld(playerid))
+			if(ii == plvw)
 			{
 				format(string, sizeof(string), " Вы уже находитесь в %d виртуальном мире !!!", ii);
 				SendClientMessage(playerid, COLOR_RED, string);
@@ -21237,7 +21239,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 						if(GetPlayerVehicleID(i) == carpl && playerid != i)//если игрок в авто инициатора, то:
 						{//установить пассажирам интерьер и виртуальный мир игрока
 							SetPlayerInterior(i, GetPlayerInterior(playerid));
-							SetPlayerVirtualWorld(i, GetPlayerVirtualWorld(playerid));
+							SetPlayerVirtualWorld(i, ii);
 							format(string, sizeof(string), " Ваш виртуальный мир был изменён на {FF0000}%d {00FF00}(Вы в режиме дрифт тренировки)", ii);
 							SendClientMessage(i, COLOR_GREEN, string);
 							SendClientMessage(i, COLOR_GREEN, " Для отключения режима дрифт тренировки используйте команду: {FF0000}/dt 0");
@@ -21245,7 +21247,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 					}
 				}
 				LinkVehicleToInterior(carpl, GetPlayerInterior(playerid));//подключить транспорт к интерьеру игрока
-				SetVehicleVirtualWorld(carpl, GetPlayerVirtualWorld(playerid));//установить транспорту виртуальный мир игрока
+				SetVehicleVirtualWorld(carpl, ii);//установить транспорту виртуальный мир игрока
 			}
 			format(string, sizeof(string), " Ваш виртуальный мир был изменён на {FF0000}%d {00FF00}(Вы в режиме дрифт тренировки)", ii);
 			SendClientMessage(playerid, COLOR_GREEN, string);
@@ -21253,7 +21255,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		}
 		else
 		{
-			if(ii == GetPlayerVirtualWorld(playerid))
+			if(ii == plvw)
 			{
 				SendClientMessage(playerid, COLOR_RED, " У Вас уже выключен режим дрифт тренировки !!!");
 				return 1;
@@ -21270,13 +21272,13 @@ public OnPlayerCommandText(playerid, cmdtext[])
 						if(GetPlayerVehicleID(i) == carpl && playerid != i)//если игрок в авто инициатора, то:
 						{//установить пассажирам интерьер и виртуальный мир игрока
 							SetPlayerInterior(i, GetPlayerInterior(playerid));
-							SetPlayerVirtualWorld(i, GetPlayerVirtualWorld(playerid));
+							SetPlayerVirtualWorld(i, ii);
 							SendClientMessage(i, COLOR_RED, " Режим дрифт тренировки был выключен");
 						}
 					}
 				}
 				LinkVehicleToInterior(carpl, GetPlayerInterior(playerid));//подключить транспорт к интерьеру игрока
-				SetVehicleVirtualWorld(carpl, GetPlayerVirtualWorld(playerid));//установить транспорту виртуальный мир игрока
+				SetVehicleVirtualWorld(carpl, ii);//установить транспорту виртуальный мир игрока
 			}
 			SendClientMessage(playerid, COLOR_RED, " Режим дрифт тренировки выключен");
 		}
@@ -27920,11 +27922,23 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					GetPlayerPos(playerid, PosX, PosY, PosZ);
 					SetPlayerPos(playerid, PosX+3, PosY+3, PosZ+5);
 				}
+				new plvw22, plvw33;
+				plvw22 = GetPlayerVirtualWorld(playerid);
+				plvw33 = GetPlayerVirtualWorld(player[playerid]);
+				if((plvw22 < 1 || plvw22 > 990) && (plvw33 >= 1 && plvw33 <= 990))
+				{
+					SendClientMessage(playerid, COLOR_RED, " * Вы ТП в ДТ мир ! Для выхода используйте: /dt 0 !");
+				}
+				if((plvw22 < 18001 || plvw22 > 18005) && (plvw33 >= 18001 && plvw33 <= 18005))
+				{
+					SendClientMessage(playerid, COLOR_RED, " * Вы ТП в ДМ мир ! Для выхода используйте:");
+					SendClientMessage(playerid, COLOR_RED, " * меню, ДеадМатчи, Выйти из DM мира !");
+				}
 				if(GetPlayerState(playerid) == 2)//если игрок на месте водителя, то:
 				{
 					new regm = 1, per1, per2, Float:per3, Float:cor1, Float:cor2, Float:cor3;
 	 				per1 = GetPlayerInterior(player[playerid]);
-					per2 = GetPlayerVirtualWorld(player[playerid]);
+					per2 = plvw33;
 	   				GetPlayerPos(player[playerid], PosX, PosY, PosZ);
 					cor1 = PosX;
 					cor2 = PosY+1;
@@ -27934,7 +27948,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				else//иначе:
 				{
 	 				SetPlayerInterior(playerid, GetPlayerInterior(player[playerid]));
-					SetPlayerVirtualWorld(playerid, GetPlayerVirtualWorld(player[playerid]));
+					SetPlayerVirtualWorld(playerid, plvw33);
 	   				GetPlayerPos(player[playerid], PosX, PosY, PosZ);
 					SetPlayerPos(playerid, PosX, PosY+1, PosZ+1);
 				}
@@ -29279,6 +29293,16 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				if(dopper > 16999 && dopper < 18000)
 				{
 					SendClientMessage(playerid, COLOR_RED, " В DM-зонах НЕТ возможности выбора транспорта !");
+					ShowPlayerDialog(playerid, 10, DIALOG_STYLE_LIST, "Транспортное средство", "{EFAE03}Тип транспорта\
+					\n{EFD803}Тюнинг\n{D1EE04}Отключить / включить автоматический ремонт\n{91EF03}Уничтожить транспорт\
+					\n{0BED05}Флипнуть", "Выбор", "Отмена");
+					dlgcont[playerid] = 10;
+					return 1;
+				}
+				if(PlayerInfo[playerid][pAdmin] <= 6 && GetPlayerInterior(playerid) == 10)
+				{
+					SendClientMessage(playerid, COLOR_RED, " Чтобы выбрать транспорт в данном интерьере,");
+					SendClientMessage(playerid, COLOR_RED, " Вы должны быть админом 7 лвл или выше !");
 					ShowPlayerDialog(playerid, 10, DIALOG_STYLE_LIST, "Транспортное средство", "{EFAE03}Тип транспорта\
 					\n{EFD803}Тюнинг\n{D1EE04}Отключить / включить автоматический ремонт\n{91EF03}Уничтожить транспорт\
 					\n{0BED05}Флипнуть", "Выбор", "Отмена");
@@ -37302,52 +37326,70 @@ public TelPort(playerid, regm, per1, per2, Float:per3, Float:cor1, Float:cor2, F
 	}
 	if(regm == 1)
 	{
-		SetPlayerInterior(playerid, per1);//телепортировать
-		SetPlayerVirtualWorld(playerid, per2);
-		new VID = GetPlayerVehicleID(playerid);
-		new Float:angle;
-		LinkVehicleToInterior(VID, per1);//подключить транспорт к ТП интерьеру
-		SetVehicleVirtualWorld(VID, per2);//установить транспорту виртуальный мир игрока
-		for(new i = 0; i < MAX_PLAYERS; i++)
+		if(PlayerInfo[playerid][pAdmin] <= 6 && per1 == 10)
+		{//если игрок - админ 6 лвл или ниже, И ТП в интерьер тюрьмы то:
+			SetPlayerInterior(playerid, per1);//тп БЕЗ транспорта
+			SetPlayerVirtualWorld(playerid, per2);
+			SetPlayerPos(playerid, cor1, cor2, cor3);
+		}
+		else//иначе:
 		{
-			if(IsPlayerConnected(i))
+			SetPlayerInterior(playerid, per1);//телепортировать
+			SetPlayerVirtualWorld(playerid, per2);
+			new VID = GetPlayerVehicleID(playerid);
+			new Float:angle;
+			LinkVehicleToInterior(VID, per1);//подключить транспорт к ТП интерьеру
+			SetVehicleVirtualWorld(VID, per2);//установить транспорту виртуальный мир игрока
+			for(new i = 0; i < MAX_PLAYERS; i++)
 			{
-				if(GetPlayerVehicleID(i) == VID && i != playerid)
-				{//установить пассажирам интерьер и виртуальный мир игрока
-					SetPlayerInterior(i, per1);
-					SetPlayerVirtualWorld(i, per2);
+				if(IsPlayerConnected(i))
+				{
+					if(GetPlayerVehicleID(i) == VID && i != playerid)
+					{//установить пассажирам интерьер и виртуальный мир игрока
+						SetPlayerInterior(i, per1);
+						SetPlayerVirtualWorld(i, per2);
+					}
 				}
 			}
+			SetVehiclePos(VID, cor1, cor2, cor3);
+			GetVehicleZAngle(VID, angle);//флипнуть
+			SetVehicleZAngle(VID, angle);
+			SetPlayerPos(playerid, cor1, cor2, cor3);
+			PutPlayerInVehicle(playerid, VID, 0);
 		}
-		SetVehiclePos(VID, cor1, cor2, cor3);
-		GetVehicleZAngle(VID, angle);//флипнуть
-		SetVehicleZAngle(VID, angle);
-		SetPlayerPos(playerid, cor1, cor2, cor3);
-		PutPlayerInVehicle(playerid, VID, 0);
 		return 1;
 	}
 	if(regm == 2)
 	{
-		SetPlayerInterior(playerid, per1);//телепортировать с углом авто
-		SetPlayerVirtualWorld(playerid, per2);
-		new VID = GetPlayerVehicleID(playerid);
-		LinkVehicleToInterior(VID, per1);//подключить транспорт к ТП интерьеру
-		SetVehicleVirtualWorld(VID, per2);//установить транспорту виртуальный мир игрока
-		for(new i = 0; i < MAX_PLAYERS; i++)
+		if(PlayerInfo[playerid][pAdmin] <= 6 && per1 == 10)
+		{//если игрок - админ 6 лвл или ниже, И ТП в интерьер тюрьмы то:
+			SetPlayerInterior(playerid, per1);//тп БЕЗ транспорта
+			SetPlayerVirtualWorld(playerid, per2);
+			SetPlayerPos(playerid, cor1, cor2, cor3);
+		}
+		else//иначе:
 		{
-			if(IsPlayerConnected(i))
+			SetPlayerInterior(playerid, per1);//телепортировать с углом авто
+			SetPlayerVirtualWorld(playerid, per2);
+			new VID = GetPlayerVehicleID(playerid);
+			LinkVehicleToInterior(VID, per1);//подключить транспорт к ТП интерьеру
+			SetVehicleVirtualWorld(VID, per2);//установить транспорту виртуальный мир игрока
+			for(new i = 0; i < MAX_PLAYERS; i++)
 			{
-				if(GetPlayerVehicleID(i) == VID && i != playerid)
-				{//установить пассажирам интерьер и виртуальный мир игрока
-					SetPlayerInterior(i, per1);
-					SetPlayerVirtualWorld(i, per2);
+				if(IsPlayerConnected(i))
+				{
+					if(GetPlayerVehicleID(i) == VID && i != playerid)
+					{//установить пассажирам интерьер и виртуальный мир игрока
+						SetPlayerInterior(i, per1);
+						SetPlayerVirtualWorld(i, per2);
+					}
 				}
 			}
+			SetVehiclePos(VID, cor1, cor2, cor3);
+			SetVehicleZAngle(VID, per3);
+			SetPlayerPos(playerid, cor1, cor2, cor3);
+			PutPlayerInVehicle(playerid, VID, 0);
 		}
-		SetVehiclePos(VID, cor1, cor2, cor3);
-		SetVehicleZAngle(VID, per3);
-		SetPlayerPos(playerid, cor1, cor2, cor3);
-		PutPlayerInVehicle(playerid, VID, 0);
 	}
 	return 1;
 }
@@ -37572,14 +37614,18 @@ public VehicSpawnKK(playerid, vehid, vehcol1, vehcol2, dispz)
 	}
 	new plvw;
 	plvw = GetPlayerVirtualWorld(playerid);
-	if((plvw >= 0 && plvw <= 16999) || plvw >= 18000)
+	if(plvw > 16999 && plvw < 18000)
 	{
-		VehicSpawn(playerid, vehid, vehcol1, vehcol2, dispz);
+		SendClientMessage(playerid, COLOR_RED, " В DM-зонах НЕТ возможности спавна транспорта !");
+		return 1;
 	}
-	else
+	if(PlayerInfo[playerid][pAdmin] <= 6 && GetPlayerInterior(playerid) == 10)
 	{
-		SendClientMessage(playerid, COLOR_RED, " В DM-зонах НЕТ возможности выбора транспорта !");
+		SendClientMessage(playerid, COLOR_RED, " Чтобы взять транспорт в данном интерьере,");
+		SendClientMessage(playerid, COLOR_RED, " Вы должны быть админом 7 лвл или выше !");
+		return 1;
 	}
+	VehicSpawn(playerid, vehid, vehcol1, vehcol2, dispz);
 	return 1;
 }
 
@@ -38476,7 +38522,7 @@ public ShowStats(playerid, targetid)
 		{
 			case 0: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - ошибка !!!",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
 			case 1: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - основной.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
-			case 2: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - ДТ.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
+			case 2: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - ДТ миры.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
 			case 3: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - дома.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
 			case 4: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - МП.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
 			case 5: format(coordsstring, sizeof(coordsstring)," Бессмертие [%d] Число затыков: [%d] Сек. затыка: [%d] Посадок в тюрьму: [%d] Сек. тюрьмы: [%d] Виртуал. мир: [%d] - гаражи.",PlayerInfo[targetid][pAdmlive],PlayerInfo[targetid][pMuted],PlayerInfo[targetid][pMutedsec],PlayerInfo[targetid][pPrison],PlayerInfo[targetid][pPrisonsec],plvw);
