@@ -145,7 +145,6 @@ public OnPlayerDisconnect(playerid, reason)
 		if(buscount[j] == 1 && strcmp(RealName[playerid], busplayname[j], false) == 0)//если бизнес существует,
 		{//и это бизнес игрока, то:
 			busidplay[j] = -600;//даём бизнесу несуществующий ИД игрока
-			busmoney[j] = 0;//обнуляем счётчик минут бизнеса
 		}
 	}
 	playIDbus[playerid] = -600;//не существующий ИД бизнеса для игрока
@@ -163,7 +162,6 @@ public OnPlayerSpawn(playerid)
 			if(buscount[j] == 1 && strcmp(RealName[playerid], busplayname[j], false) == 0)//если бизнес существует,
 			{//и это бизнес игрока, то:
 				busidplay[j] = playerid;//даём бизнесу ИД он-лайн игрока - владельца бизнеса
-				busmoney[j] = 0;//обнуляем счётчик минут бизнеса
 			}
 		}
 	}
@@ -349,6 +347,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		    busminute[para4] = para2;//задаём, через сколько минут бизнес будет приносить доход
 		    busincome[para4] = para3;//задаём доход от бизнеса
 		    busday[para4] = 0;//даём бизнесу право на его перекупку (покупку)
+			busmoney[para4] = busminute[para4];//копируем в счётчик минут бизнеса - минуты бизнеса
 
     		new file, f[256];//запись бизнеса в файл
 	    	format(f, 256, "bussystem/%i.ini", para4);
@@ -366,6 +365,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 		    	ini_setFloat(file, "CordX", buscordx[para4]);
 		    	ini_setFloat(file, "CordY", buscordy[para4]);
 		    	ini_setFloat(file, "CordZ", buscordz[para4]);
+		    	ini_setInteger(file, "Count", busmoney[para4]);
 				ini_closeFile(file);
 			}
 
@@ -761,7 +761,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				per22 = per22 - 31;
 			}
 			busidplay[playIDbus[playerid]] = playerid;//даём бизнесу ИД он-лайн игрока - владельца бизнеса
-			busmoney[playIDbus[playerid]] = 0;//обнуляем счётчик минут бизнеса
+			busmoney[playIDbus[playerid]] = busminute[playIDbus[playerid]];//копируем в счётчик минут бизнеса - минуты бизнеса
 			busday[playIDbus[playerid]] = per22;//изменение даты окончания срока без права перекупки
 			new file, f[256];//записываем изменения в файл
 			format(f, 256, "bussystem/%i.ini", playIDbus[playerid]);
@@ -770,6 +770,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 		    	ini_setString(file, "PlayName", busplayname[playIDbus[playerid]]);
 		    	ini_setInteger(file, "Day", busday[playIDbus[playerid]]);
+		    	ini_setInteger(file, "Count", busmoney[playIDbus[playerid]]);
 				ini_closeFile(file);
 			}
 			CallRemoteFunction("GPSrfun", "iiisifff", 2, 1, playIDbus[playerid], busplayname[playIDbus[playerid]],
@@ -806,7 +807,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			SetPVarInt(playerid, "PlMon", GetPVarInt(playerid, "PlMon") + buscost[playIDbus[playerid]]);//возврат денег игроку
 #endif
 			busidplay[playIDbus[playerid]] = -600;//даём бизнесу несуществующий ИД игрока
-			busmoney[playIDbus[playerid]] = 0;//обнуляем счётчик минут бизнеса
+			busmoney[playIDbus[playerid]] = busminute[playIDbus[playerid]];//копируем в счётчик минут бизнеса - минуты бизнеса
 			strdel(busplayname[playIDbus[playerid]], 0, MAX_PLAYER_NAME);//изменение имени владельца бизнеса
 			strcat(busplayname[playIDbus[playerid]], "*** INV_PL_ID");
 			if(busday[playIDbus[playerid]] != 0)//если бизнес без права его перекупки, то:
@@ -822,6 +823,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 		    	ini_setString(file, "PlayName", busplayname[playIDbus[playerid]]);
 		    	ini_setInteger(file, "Day", busday[playIDbus[playerid]]);
+		    	ini_setInteger(file, "Count", busmoney[playIDbus[playerid]]);
 				ini_closeFile(file);
 			}
 			CallRemoteFunction("GPSrfun", "iiisifff", 2, 1, playIDbus[playerid], busplayname[playIDbus[playerid]],
@@ -976,7 +978,7 @@ public dopfunction(per)
 
 public OneMin()//1-минутный таймер
 {
-	new para1;
+	new para1, file, f[256];
 	for(new i; i < BUS_MAX; i++)//цикл для всех бизнесов
 	{
 		if(buscount[i] == 1 && busidplay[i] != -600)//если бизнес существует,
@@ -984,10 +986,27 @@ public OneMin()//1-минутный таймер
 			if(IsPlayerConnected(busidplay[i]) && playspabs[busidplay[i]] == 1 &&
 			strcmp(RealName[busidplay[i]], busplayname[i], false) == 0)//дополнительная проверка на коннект игрока,
 			{//спавн игрока, и его ник (в случае некорректного отключения от скрипта, или если игрок не заспавнился)
-				busmoney[i]++;//прибавляем счётчик минут бизнеса
-				if(busmoney[i] >= busminute[i])//если счётчик минут больше или равен минуте дохода от бизнеса, то:
+				busmoney[i]--;//счётчик минут бизнеса -1
+				if(busmoney[i] > 0)//если счётчик минут бизнеса больше нуля, то:
 				{
-					busmoney[i] = 0;//обнуляем счётчик минут бизнеса
+					format(f, 256, "bussystem/%i.ini", i);//записываем изменения в файл
+					file = ini_openFile(f);
+					if(file >= 0)
+					{
+				    	ini_setInteger(file, "Count", busmoney[i]);
+						ini_closeFile(file);
+					}
+				}
+				if(busmoney[i] <= 0)//если счётчик минут бизнеса меньше или равен нулю, то:
+				{
+					busmoney[i] = busminute[i];//копируем в счётчик минут бизнеса - минуты бизнеса
+					format(f, 256, "bussystem/%i.ini", i);//записываем изменения в файл
+					file = ini_openFile(f);
+					if(file >= 0)
+					{
+				    	ini_setInteger(file, "Count", busmoney[i]);
+						ini_closeFile(file);
+					}
 #if (FS11INS == 0)
 					para1 = GetPlayerMoney(busidplay[i]);
 					SetPVarInt(busidplay[i], "MonControl", 1);
@@ -1048,11 +1067,6 @@ public LoadBusSystem()//загрузка системы бизнесов
     new file, f[256];//чтение всех бизнесов
 	for(new i; i < BUS_MAX; i++)
 	{
-//эти строки оставлены для совместимости с ранней версией скрипта !!!
-//--------------------------------- начало -------------------------------------
-		busvw[i] = 0;
-		busint[i] = 0;
-//---------------------------------- конец -------------------------------------
 		PickupID[i] = -600;//задаём несуществующий ID-номер пикапа для бизнеса
 	    format(f, 256, "bussystem/%i.ini", i);
 		file = ini_openFile(f);
@@ -1071,6 +1085,7 @@ public LoadBusSystem()//загрузка системы бизнесов
 		    ini_getFloat(file, "CordX", buscordx[i]);
 		    ini_getFloat(file, "CordY", buscordy[i]);
 		    ini_getFloat(file, "CordZ", buscordz[i]);
+		    ini_getInteger(file, "Count", busmoney[i]);
 			ini_closeFile(file);
 			CallRemoteFunction("GPSrfun", "iiisifff", 2, 1, i, busplayname[i],
 			busvw[i], buscordx[i], buscordy[i], buscordz[i]);
@@ -1097,7 +1112,6 @@ public LoadBusSystem()//загрузка системы бизнесов
 	for(new i; i < BUS_MAX; i++)
 	{
 		busidplay[i] = -600;//владелец бизнеса офф-лайн
-		busmoney[i] = 0;//обнуляем счётчик минут бизнеса
 		if(busday[i] == timecor[4])//если реальная дата равна дате окончания срока без права перекупки, то:
 		{
 			busday[i] = 0;//даём бизнесу право на его перекупку,
@@ -1143,7 +1157,6 @@ public LoadBusSystem()//загрузка системы бизнесов
 					if(buscount[j] == 1 && strcmp(RealName[i], busplayname[j], false) == 0)//если бизнес существует,
 					{//и это бизнес игрока, то:
 						busidplay[j] = i;//даём бизнесу ИД он-лайн игрока - владельца бизнеса
-						busmoney[j] = 0;//обнуляем счётчик минут бизнеса
 					}
 				}
 			}
@@ -1173,7 +1186,6 @@ public UnloadBusSystem()//выгрузка системы бизнесов
 		strdel(busplayname[i], 0, MAX_PLAYER_NAME);//удаляем имя владельца бизнеса
 		strcat(busplayname[i], "*** INV_PL_ID");
 		busidplay[i] = -600;//владелец бизнеса офф-лайн
-		busmoney[i] = 0;//обнуляем счётчик минут бизнеса
 		PickupID[i] = -600;//задаём несуществующий ID-номер пикапа для бизнеса
 		CallRemoteFunction("GPSrfun", "iiisifff", 2, 0, i, busplayname[i],
 		0, 0.0, 0.0, 0.0);

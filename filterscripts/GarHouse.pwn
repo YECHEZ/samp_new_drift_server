@@ -390,9 +390,10 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	dcmd(removeallhcars, 14, cmdtext);
 	dcmd(sellallhouses, 13, cmdtext);
     dcmd(createhouse, 11, cmdtext);
-    dcmd(passhouse, 9, cmdtext);//просмотр пароля дома
-    dcmd(relhouses, 9, cmdtext);//перезагрузка системы домов
-    dcmd(lchouse, 7, cmdtext);//блокировка дома по его ИД
+    dcmd(passhouse, 9, cmdtext);//просмотреть пароль дома по ID
+    dcmd(relhouses, 9, cmdtext);//перезагрузить систему домов
+    dcmd(lchouse, 7, cmdtext);//заблокировать дом по ID
+    dcmd(rethouse, 8, cmdtext);//вернуть дом по ID на продажу
 	dcmd(removehouse, 11, cmdtext);
 	dcmd(changeprice, 11, cmdtext);
 	dcmd(changespawn, 11, cmdtext);
@@ -1687,7 +1688,7 @@ dcmd_createhouse(playerid, params[])
     return 1;
 }
 //==============================================================================
-// просмотр пароля дома.
+// просмотреть пароль дома по ID.
 //==============================================================================
 dcmd_passhouse(playerid, params[])
 {
@@ -1728,8 +1729,7 @@ dcmd_passhouse(playerid, params[])
 		}
 		new sendername[MAX_PLAYER_NAME];
 		GetPlayerName(playerid, sendername, sizeof(sendername));
-		format(string, sizeof(string), " *** Админ %s [%d] просмотрел пароль дома ID %d .", sendername, playerid, h);
-		print(string);
+		printf("[GarHouse] Админ %s [%d] просмотрел пароль дома ID %d .", sendername, playerid, h);
 	}
 	else
 	{
@@ -1738,7 +1738,7 @@ dcmd_passhouse(playerid, params[])
     return 1;
 }
 //==============================================================================
-// перезагрузка системы домов.
+// перезагрузить систему домов.
 //==============================================================================
 dcmd_relhouses(playerid, params[])
 {
@@ -1749,8 +1749,8 @@ dcmd_relhouses(playerid, params[])
 		new sendername[MAX_PLAYER_NAME];
 		GetPlayerName(playerid, sendername, sizeof(sendername));
 		format(string, sizeof(string), " *** Админ %s [%d] начал перезагрузку системы домов.", sendername, playerid);
-		print(string);
 		SendClientMessageToAll(0xFF0000FF, string);
+		printf("[GarHouse] Админ %s [%d] начал перезагрузку системы домов.", sendername, playerid);
 		SetTimerEx("relhoyses1", 1000, 0, "i", playerid);
 	}
 	else
@@ -1805,23 +1805,16 @@ public relhoyses2(playerid)
 forward relhoyses3(playerid);
 public relhoyses3(playerid)
 {
-	for(new i = 0; i < MAX_PLAYERS; i++)
-	{
-		if(IsPlayerConnected(i))
-		{
-			TogglePlayerControllable(i, 1);//разморозить всех игроков
-		}
-	}
 	new string[256];
 	new sendername[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, sendername, sizeof(sendername));
 	format(string, sizeof(string), " *** Админ %s [%d] перезагрузил систему домов.", sendername, playerid);
-	print(string);
 	SendClientMessageToAll(0xFF0000FF, string);
+	printf("[GarHouse] Админ %s [%d] перезагрузил систему домов.", sendername, playerid);
     return 1;
 }
 //==============================================================================
-// блокировка дома по его ИД.
+// заблокировать дом по ID.
 //==============================================================================
 dcmd_lchouse(playerid, params[])
 {
@@ -1839,15 +1832,91 @@ dcmd_lchouse(playerid, params[])
 		if(!dini_Exists(file)) return SendClientMessage(playerid, 0xFF0000FF, " Дома с таким ID не существует !");
 		if(!strcmp(dini_Get(file, "HouseOwner"), INVALID_HOWNER_NAME, CASE_SENSETIVE)) return SendClientMessage(playerid, 0xFF0000FF, " Нельзя ! Дом свободен !");
 		if(!strcmp(dini_Get(file, "HouseOwner"), "* Дом заблокирован", CASE_SENSETIVE)) return SendClientMessage(playerid, 0xFF0000FF, " Дом уже заблокирован !");
+		new locdata11, Float:locdata22[3];
+		locdata22[0] = dini_Float(file, "CPOutX");
+		locdata22[1] = dini_Float(file, "CPOutY");
+		locdata22[2] = dini_Float(file, "CPOutZ");
+		locdata11 = dini_Int(file, "SpawnWorld");
 		dini_Set(file, "HouseOwner", "* Дом заблокирован");
 		dini_Set(file, "HouseName", "* Дом заблокирован");
 		UpdateHouseText(h);
+		CallRemoteFunction("GPSrfun", "iiisifff", 1, 1, h, "*** INV_PL_ID", locdata11, locdata22[0], locdata22[1], locdata22[2]);
 		new string[256];
 		new sendername[MAX_PLAYER_NAME];
 		GetPlayerName(playerid, sendername, sizeof(sendername));
 		format(string, sizeof(string), " *** Админ %s [%d] заблокировал дом ID %d .", sendername, playerid, h);
-		print(string);
 		SendClientMessageToAll(0xFF0000FF, string);
+		printf("[GarHouse] Админ %s [%d] заблокировал дом ID %d .", sendername, playerid, h);
+	}
+	else
+	{
+		SendClientMessage(playerid, 0xFF0000FF, " У Вас нет прав на использование этой команды !");
+	}
+    return 1;
+}
+//==============================================================================
+// вернуть дом по ID на продажу.
+//==============================================================================
+dcmd_rethouse(playerid, params[])
+{
+	if(IsPlayerAdmin(playerid))
+	{
+		new file[HOUSEFILE_LENGTH], h, sum;
+		if(sscanf(params, "dd", h, sum))
+		{
+			SendClientMessage(playerid, 0xBFC0C2FF, " Используйте: /rethouse [ид дома] [стоимость дома]");
+			return 1;
+		}
+    	format(file, sizeof(file), FILEPATH, h);
+		if(!dini_Exists(file)) return SendClientMessage(playerid, 0xFF0000FF, " Дома с таким ID не существует !");
+		if(!strcmp(dini_Get(file, "HouseOwner"), INVALID_HOWNER_NAME, CASE_SENSETIVE)) return SendClientMessage(playerid, 0xFF0000FF, " Нельзя ! Дом свободен !");
+		if(sum < 500000 || sum > 25000000) return SendClientMessage(playerid, 0xFF0000FF, " Стоимость должна быть между 500,000 $ и 25,000,000 $ !");
+		new locstr11[256], locstr22[256], locdata11[4], Float:locdata22[7];
+		locdata22[0] = dini_Float(file, "CPOutX");
+		locdata22[1] = dini_Float(file, "CPOutY");
+		locdata22[2] = dini_Float(file, "CPOutZ");
+		locstr11 = dini_Get(file, "HouseCreator");
+		locdata22[3] = dini_Float(file, "SpawnOutX");
+		locdata22[4] = dini_Float(file, "SpawnOutY");
+		locdata22[5] = dini_Float(file, "SpawnOutZ");
+		locdata22[6] = dini_Float(file, "SpawnOutAngle");
+		locdata11[0] = dini_Int(file, "SpawnWorld");
+		locdata11[1] = dini_Int(file, "SpawnInterior");
+		locdata11[2] = dini_Int(file, "HouseInterior");
+		locdata11[3] = dini_Int(file, "HouseInteriorValue");
+		locstr22 = dini_Get(file, "HouseInteriorName");
+		dini_Remove(file);
+	    dini_Create(file);
+		dini_FloatSet(file, "CPOutX", locdata22[0]);
+		dini_FloatSet(file, "CPOutY", locdata22[1]);
+		dini_FloatSet(file, "CPOutZ", locdata22[2]);
+		dini_Set(file, "HouseName", "Свободен");
+		dini_Set(file, "HouseOwner", "*** INV_PL_ID");
+		dini_Set(file, "HousePassword", "INVALID_HOUSE_PASSWORD");
+		dini_Set(file, "HouseCreator", locstr11);
+		dini_IntSet(file, "HouseValue", sum);
+		dini_IntSet(file, "HouseStorage", 0);
+		dini_FloatSet(file, "SpawnOutX", locdata22[3]);
+		dini_FloatSet(file, "SpawnOutY", locdata22[4]);
+		dini_FloatSet(file, "SpawnOutZ", locdata22[5]);
+		dini_FloatSet(file, "SpawnOutAngle", locdata22[6]);
+		dini_IntSet(file, "SpawnWorld", locdata11[0]);
+		dini_IntSet(file, "SpawnInterior", locdata11[1]);
+		dini_IntSet(file, "HouseInterior", locdata11[2]);
+		dini_IntSet(file, "HouseInteriorValue", locdata11[3]);
+		dini_Set(file, "HouseInteriorName", locstr22);
+		#if defined GH_USE_MAPICONS
+			DestroyDynamicMapIcon(HouseMIcon[h]);
+			HouseMIcon[h] = CreateDynamicMapIcon(locdata22[0], locdata22[1], locdata22[2], 31, -1, locdata11[0], dini_Int(file, "SpawnInterior"), -1, MICON_VD);
+		#endif
+		UpdateHouseText(h);
+		CallRemoteFunction("GPSrfun", "iiisifff", 1, 1, h, "*** INV_PL_ID", locdata11[0], locdata22[0], locdata22[1], locdata22[2]);
+		new string[256];
+		new sendername[MAX_PLAYER_NAME];
+		GetPlayerName(playerid, sendername, sizeof(sendername));
+		format(string, sizeof(string), " *** Админ %s [%d] вернул дом ID %d на продажу за %d $ .", sendername, playerid, h, sum);
+		SendClientMessageToAll(0xFFFF00FF, string);
+		printf("[GarHouse] Админ %s [%d] вернул дом ID %d на продажу за %d $ .", sendername, playerid, h, sum);
 	}
 	else
 	{
@@ -2288,8 +2357,8 @@ dcmd_ghcmds(playerid, params[])
 	else
 	{
 		ShowPlayerDialog(playerid, 520, DIALOG_STYLE_MSGBOX, "Команды", "/removeallhouses\n/changeallprices\
-		\n/sellallhouses\n/createhouse\n/removehouse\n/changeprice\n/sellhouse\n/gotohouse\n/relhouses\n/lchouse\
-		\n/housemenu\n/ghcmds", "Закрыть", "Закрыть");
+		\n/sellallhouses\n/createhouse\n/removehouse\n/changeprice\n/sellhouse\n/gotohouse\n/passhouse\n/relhouses\
+		\n/lchouse\n/rethouse\n/housemenu\n/ghcmds", "Закрыть", "Закрыть");
 		dlgcont[playerid] = 520;
 	    return 1;
     }

@@ -249,6 +249,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 			SendClientMessage(playerid, 0x00FFFFFF, "   /gremoveall - удалить все гаражи");
 			SendClientMessage(playerid, 0x00FFFFFF, "   /ggoto - телепортироваться к гаражу по его ID");
 			SendClientMessage(playerid, 0x00FFFFFF, "   /gspawn - респавнить весь транспорт в гаражах");
+			SendClientMessage(playerid, 0x00FFFFFF, "   /gret - вернуть гараж на продажу");
 			SendClientMessage(playerid, 0x00FFFFFF, "   /greload - перезагрузка системы гаражей");
 			SendClientMessage(playerid, 0x00FFFFFF, " -------------------------------------------------------------------------- ");
 		}
@@ -612,6 +613,92 @@ public OnPlayerCommandText(playerid, cmdtext[])
 //			printf("[Garage] Админ %s [%d] вернул весь брошенный транспорт в гаражи.", sendername, playerid);
 			format(string, sizeof(string), " Админ %s [%d] вернул весь брошенный транспорт в гаражи.", sendername, playerid);
 			SendClientMessageToAll(0xFF0000FF, string);
+		}
+		else
+		{
+			SendClientMessage(playerid, 0xFF0000FF, " У Вас нет прав на использование этой команды !");
+		}
+		return 1;
+	}
+	if(strcmp(cmd, "/gret", true) == 0)
+	{
+		if(IsPlayerAdmin(playerid))
+		{
+			tmp = strtok(cmdtext, idx);
+			if(!strlen(tmp))
+			{
+				SendClientMessage(playerid, 0x00FFFFFF, " Используйте: /gret [ID гаража]");
+				return 1;
+			}
+			new para1 = strval(tmp);
+			if(para1 < 0 || para1 >= GARAGE_MAX)
+			{
+				SendClientMessage(playerid, 0xFF0000FF, " Гаража с таким ID не существует !");
+				return 1;
+			}
+			format(string, sizeof(string), "garages/%i.ini", para1);
+			if(fexist(string) || garagecount[para1] == 1)//если файл или сам гараж существует, то:
+			{
+				if(strcmp(garageplayname[para1], "*** INV_PL_ID", false) == 0)
+				{
+					SendClientMessage(playerid, 0xFF0000FF, " Нельзя ! Гараж уже на продаже !");
+					return 1;
+				}
+				if(garagecarmod[para1] != 0)//если есть сохранённый транспорт, то:
+				{
+					DestroyVehicle(garagecarid[para1]);//удаляем транспорт из гаража
+				}
+				garagelock[para1] = 1;//закрываем гараж
+				strdel(garageplayname[para1], 0, MAX_PLAYER_NAME);//удаляем имя владельца гаража
+				strcat(garageplayname[para1], "*** INV_PL_ID");
+				garagecarmod[para1] = 0;//задаём модель сохраняемого транспорта в гараже (модели нет)
+				for(new i; i < 14; i++)
+				{
+					garageslot[i][para1] = 0;//очищаем слоты тюнинга сохраняемого транспорта в гараже
+				}
+				garagecost2[para1] = garagecost1[para1];//возвращаем начальную стоимость гаража
+				format(string, sizeof(string), "Гараж: Свободен\nСтоимость: %d\n/gbuy - купить гараж\nID: %d", garagecost2[para1], para1);
+				UpdateDynamic3DTextLabelText(Ngarage[para1], 0xADFF2FFF, string);//обновляем 3D-текст гаража
+
+				new file, f[256];//записываем изменения в файл
+				format(f, 256, "garages/%i.ini", para1);
+				file = ini_openFile(f);
+				if(file >= 0)
+				{
+    				ini_setString(file, "PlayName", garageplayname[para1]);
+    				ini_setInteger(file, "Cost2", garagecost2[para1]);
+					ini_setInteger(file, "Lock", garagelock[para1]);
+    				ini_setInteger(file, "CarMod", garagecarmod[para1]);
+					ini_setInteger(file, "Slot00", garageslot[0][para1]);
+    				ini_setInteger(file, "Slot01", garageslot[1][para1]);
+    				ini_setInteger(file, "Slot02", garageslot[2][para1]);
+    				ini_setInteger(file, "Slot03", garageslot[3][para1]);
+    				ini_setInteger(file, "Slot04", garageslot[4][para1]);
+    				ini_setInteger(file, "Slot05", garageslot[5][para1]);
+    				ini_setInteger(file, "Slot06", garageslot[6][para1]);
+    				ini_setInteger(file, "Slot07", garageslot[7][para1]);
+    				ini_setInteger(file, "Slot08", garageslot[8][para1]);
+    				ini_setInteger(file, "Slot09", garageslot[9][para1]);
+    				ini_setInteger(file, "Slot10", garageslot[10][para1]);
+    				ini_setInteger(file, "Slot11", garageslot[11][para1]);
+    				ini_setInteger(file, "Slot12", garageslot[12][para1]);
+    				ini_setInteger(file, "Slot13", garageslot[13][para1]);
+					ini_closeFile(file);
+				}
+				CallRemoteFunction("GPSrfun", "iiisifff", 3, 0, para1, garageplayname[para1],
+				0, 0.0, 0.0, 0.0);
+				GetPlayerName(playerid, sendername, sizeof(sendername));
+				new aa333[64];//доработка для использования Русских ников
+				format(aa333, sizeof(aa333), "%s", sendername);//доработка для использования Русских ников
+				printf("[Garage] Админ %s [%d] вернул гараж ID %d на продажу.", aa333, playerid, para1);//доработка для использования Русских ников
+//				printf("[Garage] Админ %s [%d] вернул гараж ID %d на продажу.", sendername, playerid, para1);
+				format(string, sizeof(string), " Гараж ID: %d успешно возвращён на продажу.", para1);
+				SendClientMessage(playerid, 0xFF0000FF, string);
+			}
+			else//если ни файл, и ни сам гараж не существуют, то:
+			{
+				SendClientMessage(playerid, 0xFF0000FF, " Гаража с таким ID не существует !");
+			}
 		}
 		else
 		{
